@@ -10,7 +10,11 @@ TEST(creation, valid)
 
 TEST(start, zero_tasks)
 {
-  FAIL();
+  Pipe pipe;
+
+  EXPECT_THROW({
+  pipe.Start({}, nullptr);
+  , invalid_argument);
 }
 
 TEST(execution, valid)
