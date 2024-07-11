@@ -70,7 +70,28 @@ TEST(execution, restart)
 
 TEST(execution, restop)
 {
-  FAIL();
+  Pipe state;
+
+  const auto task_1 = [&state](const Pipe::TaskID task_id, const Pipe::FrameID frame_id)
+  {
+   State->TaskDone(task_id, frame_id);
+  };
+
+  EXPECT_NO_THROW({
+    state.Start(
+    {
+     Pipe::Task{task_1, 100}
+    }, nullptr);
+  });
+
+  state.Stop();
+
+  while (state.IsRun())
+    yield();
+
+  EXPECT_THROW({
+    state.Stop();
+  }, runtime_error);
 }
 
 TEST(execution, blocking)
