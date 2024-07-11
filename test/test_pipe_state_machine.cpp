@@ -3,7 +3,9 @@
 
 TEST(creation, valid)
 {
-  FAIL();
+  EXPECT_NO_THROW({
+  Pipe pipe();
+  });
 }
 
 TEST(start, zero_tasks)
