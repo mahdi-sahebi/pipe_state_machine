@@ -4,22 +4,39 @@
 TEST(creation, valid)
 {
   EXPECT_NO_THROW({
-  Pipe pipe();
+  Pipe state();
   });
 }
 
 TEST(start, zero_tasks)
 {
-  Pipe pipe;
+  Pipe state;
 
   EXPECT_THROW({
-  pipe.Start({}, nullptr);
+  state.Start({}, nullptr);
   , invalid_argument);
 }
 
 TEST(execution, valid)
 {
-  FAIL();
+  Pipe state;
+
+  const auto task_1 = [&state](const Pipe::TaskID task_id, const Pipe::FrameID frame_id)
+    {
+      State->TaskDone(task_id, frame_id);
+    };
+
+  EXPECT_NO_THROW({
+    state.Start(
+    {
+      Pipe::Task{task_1, 100}
+    }, nullptr);
+  }
+
+  state.Stop();
+
+  while (state.IsRun())
+    yield();
 }
 
 TEST(execution, restart)
