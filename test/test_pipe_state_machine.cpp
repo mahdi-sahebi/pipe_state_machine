@@ -41,7 +41,31 @@ TEST(execution, valid)
 
 TEST(execution, restart)
 {
-  FAIL();
+  Pipe state;
+
+  const auto task_1 = [&state](const Pipe::TaskID task_id, const Pipe::FrameID frame_id)
+  {
+    State->TaskDone(task_id, frame_id);
+  };
+
+  EXPECT_NO_THROW({
+    state.Start(
+    {
+      Pipe::Task{task_1, 100}
+    }, nullptr);
+  });
+
+  EXPECT_THROW({
+    state.Start(
+    {
+      Pipe::Task{task_1, 100}
+    }, nullptr);
+  }, runtime_error);
+
+  state.Stop();
+
+  while (state.IsRun())
+   yield();
 }
 
 TEST(execution, restop)
