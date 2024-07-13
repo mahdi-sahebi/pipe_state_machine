@@ -1,0 +1,5 @@
+#ifndef ELB_PIPE_STATE_MACHINE_H_
+#define ELB_PIPE_STATE_MACHINE_H_
+
+
+#endif /* ELB_PIPE_STATE_MACHINE_H_ */
