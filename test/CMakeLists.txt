@@ -13,5 +13,6 @@ if (BUILD_TEST)
         PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
     target_link_libraries(${test}
-        PRIVATE GTest::gtest GTest::gtest_main)
+        PRIVATE GTest::gtest GTest::gtest_main
+        PRIVATE ${PROJECT_NAME})
 endif()
