@@ -1,3 +1,4 @@
+#include <cassert>
 #include "pipe_state_machine/pipe_state_machine.hpp"
 
 
@@ -96,6 +97,12 @@ void Pipe::UpdateUpperBoundPriority()
         upper_bound_index_++;
 }
 
+void Pipe::FrameComplete()
+{
+    if (nullptr != on_frame_complete_)
+    on_frame_complete_(frame_id_);
+}
+
 void Pipe::Run()
 {
     while (is_running_ && !IsLastTaskStopped()) {
@@ -103,7 +110,7 @@ void Pipe::Run()
         UpdateLowerBoundPriority();
         StartTasks();
         WaitForTasks();
-        on_frame_complete_(frame_id_);if is not nullptr     
+        FrameComplete();
         UpdateUpperBoundPriority();
         UpdateFrameID();
     }

@@ -65,6 +65,7 @@ private:
     void WaitForTasks();
     void AddTasks(const std::initializer_list<Task>& tasks, const OnFrameComplete& on_frame_complete);
     void WaitOnPause();
+    void FrameComplete();
     void UpdateFrameID();
     bool IsLastTaskStopped();
     void UpdateLowerBoundPriority();
