@@ -2,11 +2,14 @@
 #include <thread>
 #include <chrono>
 #include "gtest/gtest.h"
+#include "pipe_state_machine/pipe_state_machine.hpp"
+
 
 
 using namespace std;
 using namespace std::chrono;
 using namespace std::this_thread;
+using namespace ELB::StateMachine;
 constexpr uint32_t PROCESS_TIME_MS_101 = 13;
 constexpr uint32_t PROCESS_TIME_MS_57 = 61;
 constexpr uint32_t PROCESS_TIME_MS_94 = 30;
@@ -23,8 +26,8 @@ public:
 protected:
     PipeStateMachine* state_;
     std::vector<uint32_t> delays_;
-    std::chrono::time_point begin_time_;
-    std::chrono::time_point end_time_;
+    time_point<high_resolution_clock> begin_time_;
+    time_point<high_resolution_clock> end_time_;
 
     void ValidateFullLoadDuration();
     void PrintStart(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);

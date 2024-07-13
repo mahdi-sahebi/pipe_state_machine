@@ -9,7 +9,8 @@ if (BUILD_TEST)
     find_package(GTest)
 
     target_include_directories(${test}
-        PRIVATE ${GTEST_INCLUDE_DIR})
+        PRIVATE ${GTEST_INCLUDE_DIR}
+        PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
     target_link_libraries(${test}
         PRIVATE GTest::gtest GTest::gtest_main)
