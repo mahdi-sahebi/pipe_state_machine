@@ -1,10 +1,16 @@
-set(sources test_pipe_state_machine.cpp)
-set(test test_${PROJECT_NAME})
+option(BUILD_TEST "To enable test" OFF)
 
-add_executable(${test} ${sources})
+if (BUILD_TEST)
+    set(sources test_pipe_state_machine.cpp)
+    set(test test_${PROJECT_NAME})
 
-find_package(GTest)
-target_include_directories(${test}
-    PRIVATE ${GTEST_INCLUDE_DIR})
-target_link_libraries(${test}
-    PRIVATE GTest::gtest GTest::gtest_main)
+    add_executable(${test} ${sources})
+
+    find_package(GTest)
+
+    target_include_directories(${test}
+        PRIVATE ${GTEST_INCLUDE_DIR})
+
+    target_link_libraries(${test}
+        PRIVATE GTest::gtest GTest::gtest_main)
+endif()
