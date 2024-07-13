@@ -1,12 +1,16 @@
 #include <cassert>
 #include <thread>
 #include <chrono>
+#include <algorithm>
 #include "gtest/gtest.h"
+#include "pipe_state_machine/pipe_state_machine.hpp"
+
 
 
 using namespace std;
 using namespace std::chrono;
 using namespace std::this_thread;
+using namespace ELB::StateMachine;
 constexpr uint32_t PROCESS_TIME_MS_101 = 13;
 constexpr uint32_t PROCESS_TIME_MS_57 = 61;
 constexpr uint32_t PROCESS_TIME_MS_94 = 30;
@@ -19,36 +23,36 @@ public:
     PipeStateMachine();
     void SetUp() override;
     void TearDown() override;
+    void AsyncTask_101(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
+    void AsyncTask_57(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
+    void AsyncTask_94(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
+    void AsyncTask_193(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
+    void OnFrameComplete(const Pipe::FrameID frame_id);
 
 protected:
-    PipeStateMachine* state_;
+    Pipe* state_;
     std::vector<uint32_t> delays_;
-    std::chrono::time_point begin_time_;
-    std::chrono::time_point end_time_;
+    time_point<high_resolution_clock> begin_time_;
+    time_point<high_resolution_clock> end_time_;
 
     void ValidateFullLoadDuration();
     void PrintStart(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
     void PrintDone(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
     void DummyProcess(const uint32_t wait_ms);
-    void AsyncTask_101(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
-    void AsyncTask_57(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
-    void AsyncTask_94(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
-    void AsyncTask_10193(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
-    void OnFrameComplete(const Pipe::FrameID frame_id);
 };
 
 PipeStateMachine::PipeStateMachine()
 {
-    delays.clear();
-    delays.push_back(PROCESS_TIME_MS_101);
-    delays.push_back(PROCESS_TIME_MS_57);
-    delays.push_back(PROCESS_TIME_MS_94);
-    delays.push_back(PROCESS_TIME_MS_193);
+    delays_.clear();
+    delays_.push_back(PROCESS_TIME_MS_101);
+    delays_.push_back(PROCESS_TIME_MS_57);
+    delays_.push_back(PROCESS_TIME_MS_94);
+    delays_.push_back(PROCESS_TIME_MS_193);
 }
 
 void PipeStateMachine::SetUp()
 {
-    state_ = new PipeStateMachine();
+    state_ = new Pipe();
 }
 
 void PipeStateMachine::TearDown()
@@ -61,10 +65,10 @@ void PipeStateMachine::ValidateFullLoadDuration()
     end_time_ = high_resolution_clock::now();
     const auto all_tasks_time = duration_cast<milliseconds>(end_time_ - begin_time_).count();
 
-    const auto max_delay = std::max_element(cbegin(delays_), cend(delays_));
+    const auto max_delay = *max_element(cbegin(delays_), cend(delays_));
     
     uint32_t sum_delays = 0;
-    for (const auto&) delay : delays_)
+    for (const auto& delay : delays_)
         sum_delays += delay;
     
     EXPECT_LT(max_delay, sum_delays);
@@ -77,7 +81,7 @@ void PipeStateMachine::ValidateFullLoadDuration()
 TEST_F(PipeStateMachine, creation_valid)
 {
     EXPECT_NO_THROW({
-        Pipe state();
+        Pipe state{};
     });
 }
 
@@ -87,7 +91,7 @@ TEST_F(PipeStateMachine, start_zero_tasks)
 
     EXPECT_THROW({
         state.Start({}, nullptr);
-    , invalid_argument);
+    }, invalid_argument);
 }
 
 TEST_F(PipeStateMachine, valid_execution)
@@ -104,7 +108,7 @@ TEST_F(PipeStateMachine, valid_execution)
         {
           Pipe::Task{task_1, 100}
         }, nullptr);
-    }
+    });
 
     state.Stop();
 
@@ -187,7 +191,7 @@ void PipeStateMachine::AsyncTask_101(const Pipe::TaskID task_id, const Pipe::Fra
     assert(101 == task_id);
     PrintStart(task_id, frame_id);
 
-    std::thread process([](const auto task_id, const auto frame_id)
+    std::thread process([this](const auto task_id, const auto frame_id)
     {
         DummyProcess(PROCESS_TIME_MS_101);
         PrintDone(task_id, frame_id);
@@ -203,7 +207,7 @@ void PipeStateMachine::AsyncTask_57(const Pipe::TaskID task_id, const Pipe::Fram
     assert(57 == task_id);
     PrintStart(task_id, frame_id);
 
-    std::thread process([](const auto task_id, const auto frame_id)
+    std::thread process([this](const auto task_id, const auto frame_id)
     {
         DummyProcess(PROCESS_TIME_MS_57);
         PrintDone(task_id, frame_id);
@@ -219,7 +223,7 @@ void PipeStateMachine::AsyncTask_94(const Pipe::TaskID task_id, const Pipe::Fram
     assert(94 == task_id);
     PrintStart(task_id, frame_id);
 
-    std::thread process([](const auto task_id, const auto frame_id)
+    std::thread process([this](const auto task_id, const auto frame_id)
     {
         DummyProcess(PROCESS_TIME_MS_94);
         PrintDone(task_id, frame_id);
@@ -230,12 +234,12 @@ void PipeStateMachine::AsyncTask_94(const Pipe::TaskID task_id, const Pipe::Fram
     process.detach();
 }
 
-void PipeStateMachine::AsyncTask_10193(const Pipe::TaskID task_id, const Pipe::FrameID frame_id)
+void PipeStateMachine::AsyncTask_193(const Pipe::TaskID task_id, const Pipe::FrameID frame_id)
 {
     assert(193 == task_id);
     PrintStart(task_id, frame_id);
 
-    std::thread process([](const auto task_id, const auto frame_id)
+    std::thread process([this](const auto task_id, const auto frame_id)
     {
         DummyProcess(PROCESS_TIME_MS_193);
         PrintDone(task_id, frame_id);
@@ -263,17 +267,23 @@ void PipeStateMachine::OnFrameComplete(const Pipe::FrameID frame_id)
     ValidateFullLoadDuration();
 }
 
-TEST_F(state_machine, flow)
+TEST_F(PipeStateMachine, flow)
 {
     begin_time_ = high_resolution_clock::now();
 
+    auto task_101       = bind(&PipeStateMachine::AsyncTask_101,   this, placeholders::_1, placeholders::_2);
+    auto task_57        = bind(&PipeStateMachine::AsyncTask_57,    this, placeholders::_1, placeholders::_2);
+    auto task_94        = bind(&PipeStateMachine::AsyncTask_94,    this, placeholders::_1, placeholders::_2);
+    auto task_193       = bind(&PipeStateMachine::AsyncTask_193,   this, placeholders::_1, placeholders::_2);
+    auto frame_complete = bind(&PipeStateMachine::OnFrameComplete, this, placeholders::_1);
+
     state_->Start(
     {
-         Pipe::Task{AsyncTask_101, 101},
-         Pipe::Task{AsyncTask_57,  57},
-         Pipe::Task(AsyncTask_94,  94),
-         Pipe::Task(AsyncTask_193, 193),
-    }, OnFrameComplete);
+         Pipe::Task{task_101, 101},
+         Pipe::Task{task_57,  57},
+         Pipe::Task{task_94,  94},
+         Pipe::Task{task_193, 193}
+    }, frame_complete);
 
     while (state_->IsRun())
         yield();
@@ -282,5 +292,5 @@ TEST_F(state_machine, flow)
 int main()
 {
    testing::InitGoogleTest();
-    return RUN_ALL_TESTS();
+   return RUN_ALL_TESTS();
 }
