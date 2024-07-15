@@ -51,15 +51,10 @@
 #include "pipe_state_machine/pipe_state_machine.hpp"
 
 
-
 using namespace std;
 using namespace std::chrono;
 using namespace std::this_thread;
 using namespace ELB::StateMachine;
-constexpr uint32_t PROCESS_TIME_MS_101 = 13;
-constexpr uint32_t PROCESS_TIME_MS_57 = 61;
-constexpr uint32_t PROCESS_TIME_MS_94 = 30;
-constexpr uint32_t PROCESS_TIME_MS_193 = 28;
 
 
 class PipeStateMachine : public testing::Test
@@ -79,20 +74,22 @@ protected:
     std::vector<uint32_t> delays_;
     time_point<high_resolution_clock> begin_time_;
     time_point<high_resolution_clock> end_time_;
+    uint32_t pause_time_ms_;
 
-    void ValidateFullLoadDuration();
+    uint32_t ValidateFullLoadDuration(const Pipe::FrameID frame_id);
     void PrintStart(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
     void PrintDone(const Pipe::TaskID task_id, const Pipe::FrameID frame_id);
     void DummyProcess(const uint32_t wait_ms);
 };
 
-PipeStateMachine::PipeStateMachine()
+PipeStateMachine::PipeStateMachine() :
+    pause_time_ms_{250}
 {
     delays_.clear();
-    delays_.push_back(PROCESS_TIME_MS_101);
-    delays_.push_back(PROCESS_TIME_MS_57);
-    delays_.push_back(PROCESS_TIME_MS_94);
-    delays_.push_back(PROCESS_TIME_MS_193);
+    delays_.push_back(13);
+    delays_.push_back(61);
+    delays_.push_back(30);
+    delays_.push_back(28);
 }
 
 void PipeStateMachine::SetUp()
@@ -238,7 +235,7 @@ void PipeStateMachine::AsyncTask_101(const Pipe::TaskID task_id, const Pipe::Fra
 
     std::thread process([this](const auto task_id, const auto frame_id)
     {
-        DummyProcess(PROCESS_TIME_MS_101);
+        DummyProcess(delays_[0]);
         PrintDone(task_id, frame_id);
         assert(101 == task_id);
         state_->TaskDone(task_id, frame_id);
@@ -254,7 +251,7 @@ void PipeStateMachine::AsyncTask_57(const Pipe::TaskID task_id, const Pipe::Fram
 
     std::thread process([this](const auto task_id, const auto frame_id)
     {
-        DummyProcess(PROCESS_TIME_MS_57);
+        DummyProcess(delays_[1]);
         PrintDone(task_id, frame_id);
         assert(57 == task_id);
         state_->TaskDone(task_id, frame_id);
@@ -270,7 +267,7 @@ void PipeStateMachine::AsyncTask_94(const Pipe::TaskID task_id, const Pipe::Fram
 
     std::thread process([this](const auto task_id, const auto frame_id)
     {
-        DummyProcess(PROCESS_TIME_MS_94);
+        DummyProcess(delays_[2]);
         PrintDone(task_id, frame_id);
         assert(94 == task_id);
         state_->TaskDone(task_id, frame_id);
@@ -286,7 +283,7 @@ void PipeStateMachine::AsyncTask_193(const Pipe::TaskID task_id, const Pipe::Fra
 
     std::thread process([this](const auto task_id, const auto frame_id)
     {
-        DummyProcess(PROCESS_TIME_MS_193);
+        DummyProcess(delays_[3]);
         PrintDone(task_id, frame_id);
         assert(193 == task_id);
         state_->TaskDone(task_id, frame_id);
