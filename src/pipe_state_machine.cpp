@@ -144,7 +144,7 @@ void Pipe::Start(const initializer_list<Task> tasks, const OnFrameComplete on_fr
 {
     if (0 == tasks.size())
         throw invalid_argument("[Pipe] Tasks list is empty");
-    if (is_running_)
+    if (is_running_ || running_thread_.joinable())
         throw runtime_error("[Pipe] Is already running");
 
     AddTasks(tasks, on_frame_complete);
