@@ -102,22 +102,27 @@ void PipeStateMachine::TearDown()
     delete state_;
 }
 
-void PipeStateMachine::ValidateFullLoadDuration()
+uint32_t PipeStateMachine::ValidateFullLoadDuration(const Pipe::FrameID frame_id)
 {
     end_time_ = high_resolution_clock::now();
-    const auto all_tasks_time = duration_cast<milliseconds>(end_time_ - begin_time_).count();
-
+    auto all_tasks_time = duration_cast<milliseconds>(end_time_ - begin_time_).count();
+    if (3 == frame_id)
+        all_tasks_time -= pause_time_ms_;
+    
     const auto max_delay = *max_element(cbegin(delays_), cend(delays_));
     
     uint32_t sum_delays = 0;
     for (const auto& delay : delays_)
         sum_delays += delay;
     
+    
     EXPECT_LT(max_delay, sum_delays);
     EXPECT_LT(all_tasks_time, sum_delays);
-    EXPECT_LT(all_tasks_time, uint32_t(max_delay * 1.2));
+    EXPECT_LT(all_tasks_time, uint32_t(max_delay * 1.2));/* Because of overhead */
 
     begin_time_ = high_resolution_clock::now();
+
+    return all_tasks_time;
 }
 
 TEST_F(PipeStateMachine, creation_valid)
@@ -294,19 +299,19 @@ void PipeStateMachine::AsyncTask_193(const Pipe::TaskID task_id, const Pipe::Fra
 
 void PipeStateMachine::OnFrameComplete(const Pipe::FrameID frame_id)
 {
-    cout << "[Frame Complete " << frame_id << "] Full load: " << state_->IsFullLoad() << " - " <<
-        state_->GetRunningTasksCount() << "/" << state_->GetTasksCount() << std::endl << std::endl;
-
     if (3 == frame_id) {
         state_->Pause();
         while (!state_->IsPaused());
-        sleep_for(milliseconds(250));
+        sleep_for(milliseconds(pause_time_ms_));
         state_->Play();
     } if (7 == frame_id) {
         state_->Stop();
     }
 
-    ValidateFullLoadDuration();
+    const auto frame_duration_ms = ValidateFullLoadDuration(frame_id);
+    cout << "[Frame Complete " << frame_id << "] " << 
+        frame_duration_ms << "ms - Full load: " << state_->IsFullLoad() << " - " <<
+        state_->GetRunningTasksCount() << "/" << state_->GetTasksCount() << std::endl << std::endl;
 }
 
 TEST_F(PipeStateMachine, flow)
